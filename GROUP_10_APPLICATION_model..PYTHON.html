@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEIT HIV Model — Juja Sub-County, Kenya</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0b0f1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d45;
+    --accent: #00d4aa;
+    --accent2: #ff6b6b;
+    --accent3: #ffd93d;
+    --accent4: #6bceff;
+    --text: #e8eef8;
+    --muted: #7a8ba0;
+    --scenario-a: #ff6b6b;
+    --scenario-b: #ffd93d;
+    --scenario-c: #00d4aa;
+    --scenario-d: #6bceff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* HEADER */
+  header {
+    padding: 48px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .header-left {}
+  .header-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-tag::before {
+    content: '';
+    width: 20px; height: 1px;
+    background: var(--accent);
+    display: inline-block;
+  }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 4vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 400;
+  }
+  .header-badge {
+    background: linear-gradient(135deg, var(--accent), #00a882);
+    color: #000;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* METRICS ROW */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    transition: border-color 0.2s;
+  }
+  .metric-card:hover { border-color: var(--accent); }
+  .metric-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .metric-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .metric-value.red { color: var(--scenario-a); }
+  .metric-value.yellow { color: var(--scenario-b); }
+  .metric-value.green { color: var(--accent); }
+  .metric-value.blue { color: var(--accent4); }
+  .metric-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* SECTIONS */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* CONTROLS */
+  .controls-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+  }
+  .controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 28px;
+  }
+  .control-group label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .control-group label span {
+    color: var(--accent);
+    font-size: 13px;
+  }
+  input[type=range] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0,212,170,0.5);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+  }
+  .btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:hover {
+    background: #00f0c0;
+    box-shadow: 0 0 20px rgba(0,212,170,0.4);
+    transform: translateY(-1px);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-ghost.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,170,0.08); }
+
+  /* SCENARIO BUTTONS */
+  .scenario-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .scenario-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 8px 18px;
+    border-radius: 6px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .scenario-btn.a { border-color: var(--scenario-a); color: var(--scenario-a); }
+  .scenario-btn.b { border-color: var(--scenario-b); color: var(--scenario-b); }
+  .scenario-btn.c { border-color: var(--scenario-c); color: var(--scenario-c); }
+  .scenario-btn.d { border-color: var(--scenario-d); color: var(--scenario-d); }
+  .scenario-btn.a.active { background: rgba(255,107,107,0.15); }
+  .scenario-btn.b.active { background: rgba(255,217,61,0.15); }
+  .scenario-btn.c.active { background: rgba(0,212,170,0.15); }
+  .scenario-btn.d.active { background: rgba(107,206,255,0.15); }
+  .scenario-btn.inactive { opacity: 0.3; }
+
+  /* CHARTS */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .chart-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+  .chart-card.full { grid-column: 1 / -1; }
+  .chart-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .chart-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .chart-wrap { position: relative; height: 300px; }
+  .chart-wrap.tall { height: 380px; }
+
+  /* R0 DISPLAY */
+  .r0-panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .r0-big {
+    font-family: 'Syne', sans-serif;
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 1;
+    min-width: 140px;
+  }
+  .r0-big.endemic { color: var(--scenario-a); }
+  .r0-big.borderline { color: var(--accent3); }
+  .r0-big.controlled { color: var(--accent); }
+  .r0-info { flex: 1; min-width: 200px; }
+  .r0-info h3 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .r0-info p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+  .r0-bar-wrap { flex: 2; min-width: 260px; }
+  .r0-bar-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .r0-bar-track {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: visible;
+    position: relative;
+  }
+  .r0-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  .r0-marker {
+    position: absolute;
+    top: -4px;
+    width: 2px;
+    height: 16px;
+    background: rgba(255,255,255,0.4);
+    transform: translateX(-50%);
+  }
+  .r0-marker::after {
+    content: 'R₀=1';
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+
+  /* DATA TABLE */
+  .data-table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .data-table-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead tr {
+    background: var(--surface2);
+  }
+  th {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(30,45,69,0.6);
+    font-weight: 400;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(0,212,170,0.03); }
+  .td-scenario { font-family: 'Space Mono', monospace; font-size: 12px; }
+  .td-highlight { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; }
+  .badge {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+  .badge.best { background: rgba(0,212,170,0.2); color: var(--accent); }
+  .badge.worst { background: rgba(255,107,107,0.2); color: var(--scenario-a); }
+
+  /* SENSITIVITY */
+  .sensitivity-bars { display: flex; flex-direction: column; gap: 16px; }
+  .sens-row { display: flex; align-items: center; gap: 16px; }
+  .sens-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    width: 100px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .sens-track {
+    flex: 1;
+    height: 28px;
+    background: var(--surface2);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .sens-center-line {
+    position: absolute;
+    left: 50%;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+  .sens-fill-pos {
+    position: absolute;
+    left: 50%;
+    top: 0; bottom: 0;
+    background: rgba(255,107,107,0.6);
+    transition: width 0.5s ease;
+  }
+  .sens-fill-neg {
+    position: absolute;
+    right: 50%;
+    top: 0; bottom: 0;
+    background: rgba(0,212,170,0.6);
+    transition: width 0.5s ease;
+  }
+  .sens-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    width: 60px;
+    flex-shrink: 0;
+    text-align: left;
+  }
+
+  /* TABS */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+  .tab-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 14px 24px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.2s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* FOOTER */
+  footer {
+    margin-top: 80px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* PULSE ANIMATION */
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  .live-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+    animation: pulse 2s infinite;
+    margin-right: 6px;
+  }
+
+  /* EQUATIONS */
+  .eq-box {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin: 12px 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  /* COMPARTMENT FLOW */
+  .flow-diagram {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 24px;
+    background: var(--surface2);
+    border-radius: 12px;
+    margin: 20px 0;
+  }
+  .compartment {
+    width: 80px; height: 80px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .comp-s { background: rgba(107,206,255,0.15); border: 2px solid var(--accent4); color: var(--accent4); }
+  .comp-e { background: rgba(255,217,61,0.15); border: 2px solid var(--accent3); color: var(--accent3); }
+  .comp-i { background: rgba(255,107,107,0.15); border: 2px solid var(--scenario-a); color: var(--scenario-a); }
+  .comp-t { background: rgba(0,212,170,0.15); border: 2px solid var(--accent); color: var(--accent); }
+  .comp-label { font-size: 9px; font-family: 'Space Mono', monospace; font-weight: 400; margin-top: 4px; letter-spacing: 1px; color: var(--muted); }
+  .flow-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    text-align: center;
+    gap: 4px;
+  }
+  .flow-arrow-line {
+    width: 40px;
+    height: 2px;
+    background: var(--border);
+    position: relative;
+  }
+  .flow-arrow-line::after {
+    content: '▶';
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 8px;
+    color: var(--muted);
+  }
+
+  /* Loading overlay */
+  #loading {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    flex-direction: column;
+    gap: 16px;
+    transition: opacity 0.5s;
+  }
+  #loading.hidden { opacity: 0; pointer-events: none; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 2px; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">INITIALIZING SEIT MODEL...</div>
+</div>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <div class="header-tag">JKUAT — Industrial Mathematics · 2026</div>
+      <h1>SEIT HIV <span>Transmission</span><br>Dynamics Model</h1>
+      <p class="subtitle">Juja Sub-County, Kiambu County, Kenya · Runge-Kutta (RK4) Simulation</p>
+    </div>
+    <div class="header-badge"><span class="live-dot"></span>INTERACTIVE MODEL · R₀ = 1.85</div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('simulate')">Simulate</button>
+    <button class="tab-btn" onclick="switchTab('model')">Model & Equations</button>
+    <button class="tab-btn" onclick="switchTab('data')">Facility Data</button>
+    <button class="tab-btn" onclick="switchTab('costs')">Cost-Effectiveness</button>
+  </div>
+
+  <!-- ===== DASHBOARD TAB ===== -->
+  <div id="tab-dashboard" class="tab-panel active">
+
+    <!-- METRICS -->
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-label">Basic Repro. Number</div>
+        <div class="metric-value red" id="m-r0">1.85</div>
+        <div class="metric-sub">Endemic (R₀ &gt; 1.0)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">HIV Prevalence 2025</div>
+        <div class="metric-value yellow">4.85%</div>
+        <div class="metric-sub">95,489 adults (15–49)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">New Cases/Year</div>
+        <div class="metric-value red">237</div>
+        <div class="metric-sub">↑ from 198 in 2019</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">ART Coverage</div>
+        <div class="metric-value green">87.3%</div>
+        <div class="metric-sub">4,045 on treatment</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Best Reduction</div>
+        <div class="metric-value blue">61.8%</div>
+        <div class="metric-sub">Combined PrEP + Testing</div>
+      </div>
+    </div>
+
+    <!-- R0 PANEL -->
+    <div class="r0-panel">
+      <div>
+        <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:6px">BASIC REPRODUCTION NUMBER</div>
+        <div class="r0-big endemic">1.85</div>
+      </div>
+      <div class="r0-info">
+        <h3>HIV is Endemic in Juja Sub-County</h3>
+        <p>Each infectious individual generates on average <strong>1.85 secondary infections</strong> in a fully susceptible population. For elimination, R₀ must be reduced below 1.0 through combined intervention.</p>
+      </div>
+      <div class="r0-bar-wrap">
+        <div class="r0-bar-label">R₀ scale (0 → 3)</div>
+        <div class="r0-bar-track">
+          <div class="r0-bar-fill" style="width: 61.7%"></div>
+          <div class="r0-marker" style="left: 33.3%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)">
+          <span>0</span><span>1</span><span>2</span><span>3</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CHARTS -->
+    <div class="charts-grid">
+      <div class="chart-card full">
+        <div class="chart-title">HIV Prevalence Projections 2026–2030</div>
+        <div class="chart-desc">All four intervention scenarios — Juja Sub-County adult population (15–49)</div>
+        <div class="scenario-buttons" id="prev-toggles">
+          <button class="scenario-btn a active" onclick="toggleScenario(0)">A: Baseline</button>
+          <button class="scenario-btn b active" onclick="toggleScenario(1)">B: PrEP 20%</button>
+          <button class="scenario-btn c active" onclick="toggleScenario(2)">C: PrEP 40%</button>
+          <button class="scenario-btn d active" onclick="toggleScenario(3)">D: Combined</button>
+        </div>
+        <div class="chart-wrap tall"><canvas id="prevChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Annual New HIV Infections</div>
+        <div class="chart-desc">Incidence projections per scenario (2026–2030)</div>
+        <div class="chart-wrap"><canvas id="inciChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">SEIT Compartment Dynamics</div>
+        <div class="chart-desc">Baseline scenario — population by compartment</div>
+        <div class="chart-wrap"><canvas id="seitChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Infections Averted (5-Year Total)</div>
+        <div class="chart-desc">vs. baseline — cumulative 2026–2030</div>
+        <div class="chart-wrap"><canvas id="avertedChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Sensitivity Analysis — R₀</div>
+        <div class="chart-desc">Impact of ±20% parameter variation on R₀</div>
+        <div class="chart-wrap"><canvas id="sensChart"></canvas></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== SIMULATE TAB ===== -->
+  <div id="tab-simulate" class="tab-panel">
+
+    <div class="controls-panel">
+      <div class="section-title">Custom Scenario Parameters</div>
+      <div class="controls-grid">
+        <div class="control-group">
+          <label>Transmission Rate (β) <span id="lbl-beta">1.82 yr⁻¹</span></label>
+          <input type="range" id="sl-beta" min="0.5" max="3.0" step="0.01" value="1.82" oninput="updateSlider('beta',this.value)">
+        </div>
+        <div class="control-group">
+          <label>Treatment Rate (τ) <span id="lbl-tau">0.152 yr⁻¹</span></label>
+          <input type="range" id="sl-tau" min="0.05" max="0.6" step="0.001" value="0.152" oninput="updateSlider('tau',this.value)">
+        </div>
+        <div class="control-group">
+          <label>ART Infectiousness (ε) <span id="lbl-eps">0.04</span></label>
+          <input type="range" id="sl-eps" min="0.01" max="0.5" step="0.01" value="0.04" oninput="updateSlider('eps',this.value)">
+        </div>
+        <div class="control-group">
+          <label>Progression Rate (k) <span id="lbl-k">0.1095 yr⁻¹</span></label>
+          <input type="range" id="sl-k" min="0.05" max="0.5" step="0.005" value="0.1095" oninput="updateSlider('k',this.value)">
+        </div>
+        <div class="control-group">
+          <label>Recruitment (Λ) <span id="lbl-lambda">2850 /yr</span></label>
+          <input type="range" id="sl-lambda" min="1000" max="6000" step="50" value="2850" oninput="updateSlider('lambda',this.value)">
+        </div>
+        <div class="control-group">
+          <label>Disease Mortality (δ) <span id="lbl-delta">0.025 yr⁻¹</span></label>
+          <input type="range" id="sl-delta" min="0.005" max="0.1" step="0.005" value="0.025" oninput="updateSlider('delta',this.value)">
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="runCustomSimulation()">▶ Run Simulation</button>
+        <button class="btn btn-ghost" onclick="resetParams()">↺ Reset to Baseline</button>
+      </div>
+    </div>
+
+    <!-- Custom result -->
+    <div class="r0-panel" id="custom-r0-panel">
+      <div>
+        <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:6px">CUSTOM R₀</div>
+        <div class="r0-big" id="custom-r0-val" style="color:var(--accent)">—</div>
+      </div>
+      <div class="r0-info" id="custom-r0-info">
+        <h3>Adjust parameters and run</h3>
+        <p>Change any parameter above and click Run Simulation to compute the custom R₀ and see the projection.</p>
+      </div>
+      <div class="r0-bar-wrap">
+        <div class="r0-bar-label">Custom R₀ vs. Baseline</div>
+        <div style="display:flex;gap:16px;margin-top:8px">
+          <div style="flex:1">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px">BASELINE</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--scenario-a)">1.85</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px">CUSTOM</div>
+            <div class="r0-big" id="custom-r0-compare" style="font-size:24px;color:var(--accent)">—</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px">CHANGE</div>
+            <div id="custom-r0-delta" style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--muted)">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card full">
+        <div class="chart-title">Custom Simulation vs. Baseline</div>
+        <div class="chart-desc">HIV Prevalence 2026–2030</div>
+        <div class="chart-wrap"><canvas id="customPrevChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Custom — SEIT Compartments</div>
+        <div class="chart-desc">Population dynamics under custom parameters</div>
+        <div class="chart-wrap"><canvas id="customSeitChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Custom — Annual Incidence</div>
+        <div class="chart-desc">New infections per year</div>
+        <div class="chart-wrap"><canvas id="customInciChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODEL TAB ===== -->
+  <div id="tab-model" class="tab-panel">
+    <div class="chart-card" style="margin-bottom:24px">
+      <div class="section-title" style="font-size:18px">SEIT Compartmental Flow</div>
+      <div class="flow-diagram">
+        <div style="text-align:center;margin-right:10px">
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:6px">Λ ↓</div>
+          <div class="compartment comp-s">S<div class="comp-label">SUSCEPTIBLE</div></div>
+        </div>
+        <div class="flow-arrow">
+          <div style="font-size:10px">β(I+εT)S/N</div>
+          <div class="flow-arrow-line"></div>
+        </div>
+        <div class="compartment comp-e" style="margin-top:0">E<div class="comp-label">EXPOSED</div></div>
+        <div class="flow-arrow">
+          <div style="font-size:10px">k</div>
+          <div class="flow-arrow-line"></div>
+        </div>
+        <div class="compartment comp-i">I<div class="comp-label">INFECTED</div></div>
+        <div class="flow-arrow">
+          <div style="font-size:10px">τ</div>
+          <div class="flow-arrow-line"></div>
+        </div>
+        <div class="compartment comp-t">T<div class="comp-label">TREATED</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);padding:12px;background:var(--surface2);border-radius:8px;">
+          <span style="color:var(--scenario-a)">μS, μE, μT</span> — natural mortality<br>
+          <span style="color:var(--scenario-a)">(μ+δ)I</span> — disease mortality
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);padding:12px;background:var(--surface2);border-radius:8px;">
+          <span style="color:var(--accent4)">ε = 0.04</span> — ART infectivity reduction<br>
+          <span style="color:var(--accent4)">96% TasP effect</span> (HPTN 052)
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom:24px">
+      <div class="section-title" style="font-size:18px">Governing Ordinary Differential Equations</div>
+      <div class="eq-box">
+        dS/dt = Λ − β(I + εT)(S/N) − μS
+      </div>
+      <div class="eq-box">
+        dE/dt = β(I + εT)(S/N) − (μ + k)E
+      </div>
+      <div class="eq-box">
+        dI/dt = kE − (μ + δ + τ)I
+      </div>
+      <div class="eq-box">
+        dT/dt = τI − μT
+      </div>
+      <div class="eq-box" style="border-color:var(--accent3)">
+        λ(t) = β(I + εT) / N(t) &nbsp;&nbsp;← Force of Infection
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom:24px">
+      <div class="section-title" style="font-size:18px">R₀ Derivation (Next Generation Matrix)</div>
+      <div style="color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:16px">
+        Using van den Driessche & Watmough (2002) — spectral radius of F·V⁻¹
+      </div>
+      <div class="eq-box" style="border-color:var(--accent3)">
+        R₀ = (β × k) / [(μ + k)(μ + δ + τ)]
+      </div>
+      <div class="eq-box">
+        R₀ = (1.82 × 0.1095) / [(0.014 + 0.1095)(0.014 + 0.025 + 0.152)]
+      </div>
+      <div class="eq-box" style="border-color:var(--scenario-a)">
+        R₀ = 0.19929 / 0.023589 ≈ <strong>1.85</strong>  → ENDEMIC
+      </div>
+    </div>
+
+    <div class="data-table-wrap">
+      <div class="data-table-header">
+        <div class="chart-title">Parameter Table</div>
+        <div class="chart-desc">Calibrated from Juja Sub-County Hospital & literature (2019–2025)</div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Parameter</th><th>Symbol</th><th>Value</th><th>Unit</th><th>Source</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Recruitment rate</td><td class="td-scenario">Λ</td><td class="td-highlight" style="color:var(--accent4)">2,850</td><td>persons/yr</td><td>Juja Hospital + KNBS</td></tr>
+          <tr><td>Transmission rate</td><td class="td-scenario">β</td><td class="td-highlight" style="color:var(--scenario-a)">1.82</td><td>yr⁻¹</td><td>Model calibration</td></tr>
+          <tr><td>Natural mortality</td><td class="td-scenario">μ</td><td>0.014</td><td>yr⁻¹</td><td>KNBS life tables</td></tr>
+          <tr><td>Progression rate</td><td class="td-scenario">k</td><td>0.1095</td><td>yr⁻¹</td><td>El-Gohary (2020)</td></tr>
+          <tr><td>Disease mortality</td><td class="td-scenario">δ</td><td>0.025</td><td>yr⁻¹</td><td>Juja Hospital records</td></tr>
+          <tr><td>Treatment rate</td><td class="td-scenario">τ</td><td class="td-highlight" style="color:var(--accent)">0.152</td><td>yr⁻¹</td><td>Juja Hospital ART</td></tr>
+          <tr><td>ART infectivity factor</td><td class="td-scenario">ε</td><td>0.04</td><td>dimensionless</td><td>Cohen et al. (2021) HPTN 052</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== DATA TAB ===== -->
+  <div id="tab-data" class="tab-panel">
+    <div class="charts-grid">
+      <div class="chart-card full">
+        <div class="chart-title">New HIV Diagnoses by Year — Juja Sub-County Hospital</div>
+        <div class="chart-desc">Annual new diagnoses 2019–2025 with ART and PrEP users</div>
+        <div class="chart-wrap"><canvas id="histChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">HIV Prevalence Trend 2019–2025</div>
+        <div class="chart-desc">% of adult population (15–49)</div>
+        <div class="chart-wrap"><canvas id="prevTrendChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">ART Coverage Growth</div>
+        <div class="chart-desc">% of diagnosed cases on ART</div>
+        <div class="chart-wrap"><canvas id="artChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="data-table-wrap">
+      <div class="data-table-header">
+        <div class="chart-title">Juja Sub-County Hospital — Epidemiological Data (2019–2025)</div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Year</th><th>Total Pop (15-49)</th><th>HIV+ Cases (%)</th><th>New Diagnoses</th><th>On ART</th><th>PrEP Users</th><th>HIV Deaths</th>
+        </tr></thead>
+        <tbody id="hist-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== COSTS TAB ===== -->
+  <div id="tab-costs" class="tab-panel">
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">ICER vs. WHO Threshold</div>
+        <div class="chart-desc">Cost per DALY averted — all scenarios well below KES 630,000 WTP</div>
+        <div class="chart-wrap"><canvas id="icerChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">5-Year Total Program Cost</div>
+        <div class="chart-desc">KES billions by scenario</div>
+        <div class="chart-wrap"><canvas id="costChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">DALYs Averted</div>
+        <div class="chart-desc">Disability-Adjusted Life Years (5-year total)</div>
+        <div class="chart-wrap"><canvas id="dalyChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Lives Saved (Estimated)</div>
+        <div class="chart-desc">Cumulative 2026–2030</div>
+        <div class="chart-wrap"><canvas id="livesChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="data-table-wrap">
+      <div class="data-table-header">
+        <div class="chart-title">Complete Cost-Effectiveness Analysis</div>
+        <div class="chart-desc">5-Year totals, 2026–2030 · KES 2025 prices · WHO WTP threshold: KES 630,000/DALY</div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Scenario</th><th>5-Yr Cost (KES)</th><th>Infections Averted</th><th>ICER/Infection</th><th>ICER/DALY</th><th>DALYs Averted</th><th>Lives Saved</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="td-scenario" style="color:var(--scenario-a)">A: Baseline</td>
+            <td>1,850,000,000</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="badge worst">0</span></td>
+          </tr>
+          <tr>
+            <td class="td-scenario" style="color:var(--scenario-b)">B: PrEP 20%</td>
+            <td>2,150,000,000</td><td>163</td><td>1,840,000</td><td>65,700</td><td>4,564</td><td>~45</td>
+          </tr>
+          <tr>
+            <td class="td-scenario" style="color:var(--accent)">C: PrEP 40%</td>
+            <td>2,550,000,000</td><td>367</td><td>1,907,000</td><td>68,100</td><td>10,276</td><td>~102</td>
+          </tr>
+          <tr style="background:rgba(107,206,255,0.05)">
+            <td class="td-scenario" style="color:var(--accent4)">D: Combined <span class="badge best">BEST</span></td>
+            <td class="td-highlight" style="color:var(--accent4)">2,980,000,000</td>
+            <td class="td-highlight" style="color:var(--accent4)">610</td>
+            <td class="td-highlight" style="color:var(--accent)">1,827,000</td>
+            <td class="td-highlight" style="color:var(--accent)">65,300</td>
+            <td class="td-highlight" style="color:var(--accent4)">17,080</td>
+            <td>~169</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /wrapper -->
+
+<footer style="position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:32px 24px 48px">
+  <div>
+    Laurence Maina · Hilda Peter · Vera Vicky · Stanley Munyao · Baruch Limo
+  </div>
+  <div>
+    Dept. of Pure &amp; Applied Mathematics, JKUAT · Supervisor: Dr. Phineus Kiogora, PhD · 2026
+  </div>
+</footer>
+
+<script>
+// ================================================================
+// SEIT MODEL — FULL RUNGE-KUTTA 4 IMPLEMENTATION IN JAVASCRIPT
+// Port of Appendix A Python code
+// ================================================================
+
+// Baseline parameters
+const BASE = {
+  Lambda: 2850,
+  beta:   1.82,
+  mu:     0.014,
+  k:      0.1095,
+  delta:  0.025,
+  tau:    0.152,
+  eps:    0.04,
+};
+
+// Initial conditions (Jan 2026)
+const Y0 = [90857, 450, 587, 4045];
+
+// ODE system: returns [dS, dE, dI, dT]
+function seitODE(y, t, p) {
+  const [S, E, I, T] = y;
+  const N = S + E + I + T;
+  if (N <= 0) return [0,0,0,0];
+  const lambda_t = p.beta * (I + p.eps * T) / N;
+  const dS = p.Lambda - lambda_t * S - p.mu * S;
+  const dE = lambda_t * S - (p.mu + p.k) * E;
+  const dI = p.k * E - (p.mu + p.delta + p.tau) * I;
+  const dT = p.tau * I - p.mu * T;
+  return [dS, dE, dI, dT];
+}
+
+// RK4 step
+function rk4Step(y, t, dt, p) {
+  const k1 = seitODE(y, t, p);
+  const k2 = seitODE(y.map((v,i)=>v+0.5*dt*k1[i]), t+0.5*dt, p);
+  const k3 = seitODE(y.map((v,i)=>v+0.5*dt*k2[i]), t+0.5*dt, p);
+  const k4 = seitODE(y.map((v,i)=>v+dt*k3[i]), t+dt, p);
+  return y.map((v,i) => v + (dt/6)*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));
+}
+
+// Solve ODE over [0, T_end] with dt = 0.01 years, return monthly snapshots
+function solveODE(p, T_end=5, monthlyPts=61) {
+  const dt = 0.01;
+  const steps = Math.round(T_end / dt);
+  const snapshotEvery = Math.round(steps / (monthlyPts - 1));
+
+  let y = [...Y0];
+  let t = 0;
+  const results = { S:[],E:[],I:[],T:[],N:[],prev:[],inci:[], t:[] };
+
+  const snap = () => {
+    const [S,E,I,T] = y;
+    const N = S+E+I+T;
+    results.S.push(S); results.E.push(E);
+    results.I.push(I); results.T.push(T);
+    results.N.push(N);
+    results.prev.push((I+T)/N*100);
+    results.inci.push(p.k * E * 12); // annualised monthly incidence
+    results.t.push(t);
+  };
+
+  snap();
+  for (let step = 1; step <= steps; step++) {
+    y = rk4Step(y, t, dt, p);
+    t += dt;
+    if (step % snapshotEvery === 0) snap();
+  }
+  // Ensure exactly monthlyPts points
+  while (results.t.length < monthlyPts) {
+    results.t.push(results.t[results.t.length-1]+1/12);
+    results.S.push(results.S[results.S.length-1]);
+    results.E.push(results.E[results.E.length-1]);
+    results.I.push(results.I[results.I.length-1]);
+    results.T.push(results.T[results.T.length-1]);
+    results.N.push(results.N[results.N.length-1]);
+    results.prev.push(results.prev[results.prev.length-1]);
+    results.inci.push(results.inci[results.inci.length-1]);
+  }
+  return results;
+}
+
+function computeR0(p) {
+  return (p.beta * p.k) / ((p.mu + p.k) * (p.mu + p.delta + p.tau));
+}
+
+// Cumulative infections (trapezoidal)
+function cumInfections(res) {
+  let total = 0;
+  const dt = 5 / (res.inci.length - 1); // years
+  for (let i = 1; i < res.inci.length; i++) {
+    total += 0.5 * (res.inci[i-1] + res.inci[i]) * dt;
+  }
+  return total;
+}
+
+// Scenarios
+const SCENARIOS = {
+  'A: Baseline':  { beta: BASE.beta,        tau: BASE.tau        },
+  'B: PrEP 20%':  { beta: BASE.beta*0.86,   tau: BASE.tau        },
+  'C: PrEP 40%':  { beta: BASE.beta*0.72,   tau: BASE.tau        },
+  'D: Combined':  { beta: BASE.beta*0.72,   tau: BASE.tau*2.0    },
+};
+
+const COLORS = ['#ff6b6b','#ffd93d','#00d4aa','#6bceff'];
+const MONTHS = [];
+for (let i=0; i<=60; i++) MONTHS.push((2026 + i/12).toFixed(2));
+
+// Run all scenarios
+let simResults = {};
+let simVisible = [true,true,true,true];
+
+function runAllScenarios() {
+  const scNames = Object.keys(SCENARIOS);
+  scNames.forEach(name => {
+    const sc = SCENARIOS[name];
+    const p = {...BASE, beta: sc.beta, tau: sc.tau};
+    simResults[name] = solveODE(p);
+  });
+}
+
+// ===== CHARTS =====
+let charts = {};
+
+function mkChart(id, type, data, options={}) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return null;
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, { type, data, options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 600, easing: 'easeOutQuart' },
+    plugins: {
+      legend: { labels: { color: '#7a8ba0', font: { family: 'Space Mono', size: 10 } } },
+      tooltip: {
+        backgroundColor: '#1a2235',
+        borderColor: '#1e2d45',
+        borderWidth: 1,
+        titleColor: '#e8eef8',
+        bodyColor: '#7a8ba0',
+        titleFont: { family: 'Syne', weight: 'bold' },
+        bodyFont: { family: 'Space Mono', size: 11 },
+      }
+    },
+    scales: {
+      x: { ticks: { color:'#7a8ba0', font:{family:'Space Mono',size:9}, maxTicksLimit:7 }, grid:{color:'rgba(30,45,69,0.8)'} },
+      y: { ticks: { color:'#7a8ba0', font:{family:'Space Mono',size:9} }, grid:{color:'rgba(30,45,69,0.8)'} }
+    },
+    ...options
+  }});
+  return charts[id];
+}
+
+// YEARS array (just annual labels)
+const YEARS_LABELS = ['2026','2026.5','2027','2027.5','2028','2028.5','2029','2029.5','2030','2030.5'];
+const T_IDX = [0,6,12,18,24,30,36,42,48,54,60]; // monthly indices for annual
+
+function yearLabels(res) {
+  const labels = [];
+  for (let i=0; i<res.t.length; i++) {
+    labels.push((2026 + res.t[i]).toFixed(1));
+  }
+  return labels;
+}
+
+// ====== Dashboard charts ======
+
+function buildPrevChart() {
+  const scNames = Object.keys(SCENARIOS);
+  const datasets = scNames.map((name,i) => ({
+    label: name,
+    data: simResults[name].prev.map(v=>v.toFixed(3)),
+    borderColor: COLORS[i],
+    backgroundColor: COLORS[i]+'22',
+    borderWidth: 2.5,
+    pointRadius: 0,
+    tension: 0.3,
+    fill: false,
+    hidden: !simVisible[i],
+  }));
+  const labels = yearLabels(simResults[scNames[0]]);
+  mkChart('prevChart','line',{labels,datasets},{
+    plugins:{ legend:{position:'top'},
+      annotation:{annotations:{line1:{type:'line',yMin:4.85,yMax:4.85,borderColor:'rgba(255,255,255,0.2)',borderDash:[4,4],label:{content:'2025 baseline',display:true,color:'rgba(255,255,255,0.3)',font:{size:10}}}}}
+    },
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9},maxTicksLimit:10},grid:{color:'rgba(30,45,69,0.8)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9},callback:v=>v+'%'},grid:{color:'rgba(30,45,69,0.8)'},title:{display:true,text:'HIV Prevalence (%)',color:'#7a8ba0',font:{family:'Space Mono',size:9}}}
+    }
+  });
+}
+
+function buildInciChart() {
+  const scNames = Object.keys(SCENARIOS);
+  // Annual snapshots
+  const annual = [0,12,24,36,48,60];
+  const annLabels = annual.map(i=>(2026+i/12).toFixed(0));
+  const datasets = scNames.map((name,i)=>({
+    label: name,
+    data: annual.map(idx=>simResults[name].inci[idx].toFixed(0)),
+    backgroundColor: COLORS[i]+'bb',
+    borderColor: COLORS[i],
+    borderWidth: 1,
+    borderRadius: 4,
+  }));
+  mkChart('inciChart','bar',{labels:annLabels,datasets},{
+    plugins:{legend:{position:'top'}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.5)'},stacked:false},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.5)'},title:{display:true,text:'New Infections/yr',color:'#7a8ba0',font:{family:'Space Mono',size:9}}}
+    }
+  });
+}
+
+function buildSeitChart() {
+  const res = simResults['A: Baseline'];
+  const labels = yearLabels(res);
+  mkChart('seitChart','line',{labels,datasets:[
+    {label:'S – Susceptible',data:res.S.map(v=>Math.round(v)),borderColor:'#6bceff',pointRadius:0,borderWidth:2,tension:0.3},
+    {label:'E – Exposed',data:res.E.map(v=>Math.round(v)),borderColor:'#ffd93d',pointRadius:0,borderWidth:2,tension:0.3},
+    {label:'I – Infected',data:res.I.map(v=>Math.round(v)),borderColor:'#ff6b6b',pointRadius:0,borderWidth:2,tension:0.3},
+    {label:'T – Treated',data:res.T.map(v=>Math.round(v)),borderColor:'#00d4aa',pointRadius:0,borderWidth:2,tension:0.3},
+  ]},{
+    plugins:{legend:{position:'top'}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9},maxTicksLimit:8},grid:{color:'rgba(30,45,69,0.8)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.8)'},title:{display:true,text:'Population',color:'#7a8ba0',font:{family:'Space Mono',size:9}}}
+    }
+  });
+}
+
+function buildAvertedChart() {
+  const scNames = Object.keys(SCENARIOS);
+  const baseCum = cumInfections(simResults['A: Baseline']);
+  const averted = scNames.map(name => {
+    const cum = cumInfections(simResults[name]);
+    return Math.max(0, baseCum - cum).toFixed(0);
+  });
+  mkChart('avertedChart','doughnut',{
+    labels: scNames,
+    datasets:[{data:averted,backgroundColor:COLORS.map(c=>c+'cc'),borderColor:COLORS,borderWidth:2,hoverOffset:8}]
+  },{
+    plugins:{legend:{position:'right',labels:{color:'#7a8ba0',font:{family:'Space Mono',size:10},padding:16}}},
+    scales:{x:false,y:false}
+  });
+}
+
+function buildSensChart() {
+  const params = ['β (trans.)', 'μ (mortality)', 'k (progression)', 'τ (treatment)'];
+  const baseR0 = computeR0(BASE);
+  function r0var(key, factor) {
+    const p = {...BASE};
+    if(key==='beta') p.beta *= factor;
+    if(key==='mu') p.mu *= factor;
+    if(key==='k') p.k *= factor;
+    if(key==='tau') p.tau *= factor;
+    return computeR0(p);
+  }
+  const keys = ['beta','mu','k','tau'];
+  const high = keys.map(k=>r0var(k,1.2)-baseR0);
+  const low  = keys.map(k=>r0var(k,0.8)-baseR0);
+
+  mkChart('sensChart','bar',{
+    labels: params,
+    datasets:[
+      {label:'+20%',data:high.map(v=>v.toFixed(3)),backgroundColor:'rgba(255,107,107,0.7)',borderRadius:4},
+      {label:'−20%',data:low.map(v=>v.toFixed(3)),backgroundColor:'rgba(0,212,170,0.7)',borderRadius:4},
+    ]
+  },{
+    plugins:{legend:{position:'top'}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:10}},grid:{color:'rgba(30,45,69,0.5)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:10}},grid:{color:'rgba(30,45,69,0.5)'},title:{display:true,text:'ΔR₀',color:'#7a8ba0',font:{family:'Space Mono',size:10}}}
+    }
+  });
+}
+
+// ====== Data tab charts ======
+const HIST = [
+  {yr:2019,pop:88456,cases:4112,pct:4.65,diag:198,art:3289,prep:412,deaths:98,artPct:80.0},
+  {yr:2020,pop:90123,cases:4201,pct:4.66,diag:187,art:3456,prep:445,deaths:89,artPct:82.3},
+  {yr:2021,pop:91567,cases:4289,pct:4.68,diag:205,art:3601,prep:478,deaths:104,artPct:84.0},
+  {yr:2022,pop:92845,cases:4378,pct:4.72,diag:221,art:3734,prep:512,deaths:109,artPct:85.3},
+  {yr:2023,pop:93978,cases:4467,pct:4.75,diag:228,art:3856,prep:548,deaths:112,artPct:86.3},
+  {yr:2024,pop:94924,cases:4556,pct:4.80,diag:234,art:3967,prep:589,deaths:115,artPct:87.0},
+  {yr:2025,pop:95489,cases:4632,pct:4.85,diag:237,art:4045,prep:623,deaths:119,artPct:87.3},
+];
+
+function buildHistChart() {
+  const labels = HIST.map(d=>d.yr);
+  mkChart('histChart','bar',{labels,datasets:[
+    {label:'New Diagnoses',data:HIST.map(d=>d.diag),backgroundColor:'#ff6b6b99',borderColor:'#ff6b6b',borderWidth:1,borderRadius:4,yAxisID:'y'},
+    {label:'ART Users',data:HIST.map(d=>d.art),backgroundColor:'#00d4aa44',borderColor:'#00d4aa',borderWidth:1,borderRadius:4,yAxisID:'y1'},
+    {label:'PrEP Users',data:HIST.map(d=>d.prep),backgroundColor:'#ffd93d44',borderColor:'#ffd93d',borderWidth:1,borderRadius:4,yAxisID:'y1'},
+  ]},{
+    plugins:{legend:{position:'top'}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:10}},grid:{color:'rgba(30,45,69,0.5)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.5)'},title:{display:true,text:'New Diagnoses',color:'#7a8ba0',font:{family:'Space Mono',size:9}}},
+      y1:{position:'right',ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{display:false},title:{display:true,text:'ART/PrEP Users',color:'#7a8ba0',font:{family:'Space Mono',size:9}}}
+    }
+  });
+}
+
+function buildPrevTrendChart() {
+  mkChart('prevTrendChart','line',{
+    labels: HIST.map(d=>d.yr),
+    datasets:[{
+      label:'HIV Prevalence %',
+      data:HIST.map(d=>d.pct),
+      borderColor:'#ffd93d',
+      backgroundColor:'rgba(255,217,61,0.1)',
+      fill:true,
+      pointRadius:5,
+      pointBackgroundColor:'#ffd93d',
+      borderWidth:2.5,
+      tension:0.3,
+    }]
+  },{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:10}},grid:{color:'rgba(30,45,69,0.5)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9},callback:v=>v+'%'},grid:{color:'rgba(30,45,69,0.5)'},min:4.5,max:5.0}
+    }
+  });
+}
+
+function buildArtChart() {
+  mkChart('artChart','line',{
+    labels: HIST.map(d=>d.yr),
+    datasets:[{
+      label:'ART Coverage %',
+      data:HIST.map(d=>d.artPct),
+      borderColor:'#00d4aa',
+      backgroundColor:'rgba(0,212,170,0.1)',
+      fill:true,
+      pointRadius:5,
+      pointBackgroundColor:'#00d4aa',
+      borderWidth:2.5,
+      tension:0.3,
+    }]
+  },{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:10}},grid:{color:'rgba(30,45,69,0.5)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9},callback:v=>v+'%'},grid:{color:'rgba(30,45,69,0.5)'},min:75,max:92}
+    }
+  });
+}
+
+function buildHistTable() {
+  const tbody = document.getElementById('hist-table');
+  tbody.innerHTML = HIST.map(d=>`
+    <tr>
+      <td>${d.yr}</td>
+      <td>${d.pop.toLocaleString()}</td>
+      <td>${d.cases.toLocaleString()} (${d.pct}%)</td>
+      <td style="color:var(--scenario-a);font-weight:600">${d.diag}</td>
+      <td style="color:var(--accent)">${d.art.toLocaleString()}</td>
+      <td style="color:var(--accent3)">${d.prep}</td>
+      <td style="color:var(--muted)">${d.deaths}</td>
+    </tr>
+  `).join('');
+}
+
+// ====== Cost charts ======
+function buildCostCharts() {
+  const scLabels = ['A: Baseline','B: PrEP 20%','C: PrEP 40%','D: Combined'];
+  const icer = [0, 65700, 68100, 65300];
+  const totalCost = [1.85, 2.15, 2.55, 2.98];
+  const dalys = [0, 4564, 10276, 17080];
+  const lives = [0, 45, 102, 169];
+
+  mkChart('icerChart','bar',{labels:scLabels,datasets:[
+    {label:'ICER (KES/DALY)',data:icer,backgroundColor:COLORS.map(c=>c+'bb'),borderColor:COLORS,borderWidth:1,borderRadius:6},
+    {label:'WTP Threshold (630,000)',data:[630000,630000,630000,630000],type:'line',borderColor:'rgba(255,255,255,0.3)',borderDash:[6,4],borderWidth:2,pointRadius:0}
+  ]},{
+    plugins:{legend:{position:'top'}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.5)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9},callback:v=>v.toLocaleString()},grid:{color:'rgba(30,45,69,0.5)'},title:{display:true,text:'KES/DALY',color:'#7a8ba0',font:{family:'Space Mono',size:9}}}
+    }
+  });
+
+  mkChart('costChart','bar',{labels:scLabels,datasets:[
+    {label:'5-Year Cost (KES Billion)',data:totalCost,backgroundColor:COLORS.map(c=>c+'bb'),borderColor:COLORS,borderWidth:1,borderRadius:6}
+  ]},{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.5)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9},callback:v=>v+'B'},grid:{color:'rgba(30,45,69,0.5)'}}
+    }
+  });
+
+  mkChart('dalyChart','bar',{labels:scLabels,datasets:[
+    {label:'DALYs Averted',data:dalys,backgroundColor:COLORS.map(c=>c+'bb'),borderColor:COLORS,borderWidth:1,borderRadius:6}
+  ]},{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.5)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.5)'}}
+    }
+  });
+
+  mkChart('livesChart','bar',{labels:scLabels,datasets:[
+    {label:'Lives Saved',data:lives,backgroundColor:COLORS.map(c=>c+'bb'),borderColor:COLORS,borderWidth:1,borderRadius:6}
+  ]},{
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.5)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.5)'}}
+    }
+  });
+}
+
+// ====== Custom simulation ======
+let customParams = {...BASE};
+
+function updateSlider(key, val) {
+  val = parseFloat(val);
+  if(key==='beta')   { customParams.beta=val; document.getElementById('lbl-beta').textContent=val.toFixed(3)+' yr⁻¹'; }
+  if(key==='tau')    { customParams.tau=val;  document.getElementById('lbl-tau').textContent=val.toFixed(3)+' yr⁻¹'; }
+  if(key==='eps')    { customParams.eps=val;  document.getElementById('lbl-eps').textContent=val.toFixed(2); }
+  if(key==='k')      { customParams.k=val;    document.getElementById('lbl-k').textContent=val.toFixed(4)+' yr⁻¹'; }
+  if(key==='lambda') { customParams.Lambda=val; document.getElementById('lbl-lambda').textContent=val.toFixed(0)+' /yr'; }
+  if(key==='delta')  { customParams.delta=val; document.getElementById('lbl-delta').textContent=val.toFixed(3)+' yr⁻¹'; }
+}
+
+function resetParams() {
+  customParams = {...BASE};
+  document.getElementById('sl-beta').value   = BASE.beta;
+  document.getElementById('sl-tau').value    = BASE.tau;
+  document.getElementById('sl-eps').value    = BASE.eps;
+  document.getElementById('sl-k').value      = BASE.k;
+  document.getElementById('sl-lambda').value = BASE.Lambda;
+  document.getElementById('sl-delta').value  = BASE.delta;
+  document.getElementById('lbl-beta').textContent = BASE.beta+' yr⁻¹';
+  document.getElementById('lbl-tau').textContent  = BASE.tau+' yr⁻¹';
+  document.getElementById('lbl-eps').textContent  = BASE.eps;
+  document.getElementById('lbl-k').textContent    = BASE.k+' yr⁻¹';
+  document.getElementById('lbl-lambda').textContent = BASE.Lambda+' /yr';
+  document.getElementById('lbl-delta').textContent = BASE.delta+' yr⁻¹';
+}
+
+function runCustomSimulation() {
+  const res = solveODE(customParams);
+  const baseRes = simResults['A: Baseline'];
+  const r0Custom = computeR0(customParams);
+  const r0Base = computeR0(BASE);
+  const delta = r0Custom - r0Base;
+  const deltaStr = (delta>=0?'+':'')+delta.toFixed(3);
+  const r0Color = r0Custom < 1.0 ? 'var(--accent)' : r0Custom < 1.5 ? 'var(--accent3)' : 'var(--scenario-a)';
+  const r0Status = r0Custom < 1.0 ? 'Disease-Free Equilibrium Stable' : r0Custom < 1.5 ? 'Near elimination threshold' : 'Endemic — R₀ > 1';
+
+  document.getElementById('custom-r0-val').textContent = r0Custom.toFixed(3);
+  document.getElementById('custom-r0-val').style.color = r0Color;
+  document.getElementById('custom-r0-compare').textContent = r0Custom.toFixed(3);
+  document.getElementById('custom-r0-compare').style.color = r0Color;
+  document.getElementById('custom-r0-delta').textContent = deltaStr;
+  document.getElementById('custom-r0-delta').style.color = delta < 0 ? 'var(--accent)' : 'var(--scenario-a)';
+  document.getElementById('custom-r0-info').querySelector('h3').textContent = r0Status;
+  document.getElementById('custom-r0-info').querySelector('p').textContent =
+    `Custom R₀ = ${r0Custom.toFixed(3)} (${delta<0?'↓ reduced ':'↑ increased by '}${Math.abs(delta).toFixed(3)} from baseline 1.85). ${r0Custom<1?'Elimination is theoretically achievable.':'Elimination requires further parameter changes.'}`;
+
+  const labels = yearLabels(res);
+  mkChart('customPrevChart','line',{labels,datasets:[
+    {label:'A: Baseline',data:baseRes.prev.map(v=>v.toFixed(3)),borderColor:'#ff6b6b',borderWidth:1.5,pointRadius:0,tension:0.3,borderDash:[5,5]},
+    {label:'Custom Scenario',data:res.prev.map(v=>v.toFixed(3)),borderColor:'#00d4aa',borderWidth:2.5,pointRadius:0,tension:0.3,fill:false},
+  ]},{
+    plugins:{legend:{position:'top'}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9},maxTicksLimit:10},grid:{color:'rgba(30,45,69,0.8)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9},callback:v=>v+'%'},grid:{color:'rgba(30,45,69,0.8)'},title:{display:true,text:'HIV Prevalence (%)',color:'#7a8ba0',font:{family:'Space Mono',size:9}}}
+    }
+  });
+
+  mkChart('customSeitChart','line',{labels,datasets:[
+    {label:'S',data:res.S.map(v=>Math.round(v)),borderColor:'#6bceff',pointRadius:0,borderWidth:2,tension:0.3},
+    {label:'E',data:res.E.map(v=>Math.round(v)),borderColor:'#ffd93d',pointRadius:0,borderWidth:2,tension:0.3},
+    {label:'I',data:res.I.map(v=>Math.round(v)),borderColor:'#ff6b6b',pointRadius:0,borderWidth:2,tension:0.3},
+    {label:'T',data:res.T.map(v=>Math.round(v)),borderColor:'#00d4aa',pointRadius:0,borderWidth:2,tension:0.3},
+  ]},{
+    plugins:{legend:{position:'top'}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9},maxTicksLimit:8},grid:{color:'rgba(30,45,69,0.8)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.8)'}}
+    }
+  });
+
+  const annual = [0,12,24,36,48,60];
+  mkChart('customInciChart','line',{
+    labels: annual.map(i=>(2026+i/12).toFixed(0)),
+    datasets:[
+      {label:'Baseline',data:annual.map(idx=>baseRes.inci[idx].toFixed(0)),borderColor:'#ff6b6b',borderWidth:1.5,borderDash:[5,5],pointRadius:4,tension:0.3},
+      {label:'Custom',data:annual.map(idx=>res.inci[idx].toFixed(0)),borderColor:'#00d4aa',borderWidth:2,pointRadius:5,pointBackgroundColor:'#00d4aa',tension:0.3},
+    ]
+  },{
+    plugins:{legend:{position:'top'}},
+    scales:{
+      x:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:10}},grid:{color:'rgba(30,45,69,0.5)'}},
+      y:{ticks:{color:'#7a8ba0',font:{family:'Space Mono',size:9}},grid:{color:'rgba(30,45,69,0.5)'},title:{display:true,text:'New Infections/yr',color:'#7a8ba0',font:{family:'Space Mono',size:9}}}
+    }
+  });
+}
+
+// ====== Toggle scenarios ======
+function toggleScenario(idx) {
+  simVisible[idx] = !simVisible[idx];
+  const btns = document.querySelectorAll('#prev-toggles .scenario-btn');
+  btns[idx].classList.toggle('active', simVisible[idx]);
+  btns[idx].classList.toggle('inactive', !simVisible[idx]);
+  if (charts['prevChart']) {
+    charts['prevChart'].data.datasets[idx].hidden = !simVisible[idx];
+    charts['prevChart'].update();
+  }
+}
+
+// ====== Tab switching ======
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    if(b.textContent.toLowerCase().includes(name.substring(0,4))) b.classList.add('active');
+  });
+  // Fix the active tab button matching
+  const tabMap = {dashboard:0,simulate:1,model:2,data:3,costs:4};
+  const allBtns = document.querySelectorAll('.tab-btn');
+  allBtns.forEach(b=>b.classList.remove('active'));
+  allBtns[tabMap[name]]?.classList.add('active');
+}
+
+// ====== INIT ======
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    runAllScenarios();
+    buildPrevChart();
+    buildInciChart();
+    buildSeitChart();
+    buildAvertedChart();
+    buildSensChart();
+    buildHistChart();
+    buildPrevTrendChart();
+    buildArtChart();
+    buildHistTable();
+    buildCostCharts();
+    document.getElementById('loading').classList.add('hidden');
+  }, 400);
+});
+</script>
+</body>
+</html>
